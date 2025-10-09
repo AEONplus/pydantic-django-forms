@@ -7,8 +7,27 @@ authors = [
     { name = "Austin Riba", email = "austin@m51.io" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "django>=5.2.7",
+    "pydantic>=2.12.0",
+]
 
 [build-system]
 requires = ["uv_build>=0.8.24,<0.9.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.2.7",
+    "pytest>=8.4.2",
+    "pytest-django>=4.11.1",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "pdf_test.settings"
+pythonpath = ["test"]
+
+[tool.pyright]
+reportMissingParameterType = false
+reportMissingTypeArgument = false
+reportUnannotatedClassAttribute = false
