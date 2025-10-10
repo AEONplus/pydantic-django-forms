@@ -221,3 +221,20 @@ def test_date_and_datetime_field_valid():
     assert form.is_valid()
     assert form.cleaned_data["date"] == date(2025, 1, 1)
     assert form.cleaned_data["datetime"] == datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
+
+
+class SimpleUnionModel(BaseModel):
+    field: int | str
+
+
+class SimpleUnionModelForm(PydanticModelForm):
+    class Meta:
+        model = SimpleUnionModel
+
+
+def test_simple_union_model():
+    # String is part of the union, so we prioritize it to allow the most
+    # flexible set of inputs
+    form = SimpleUnionModelForm()
+    assert form.fields["field"].__class__ == forms.CharField
+    assert form.fields["field"].required

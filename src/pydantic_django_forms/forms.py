@@ -64,7 +64,6 @@ class PydanticModelForm(forms.Form):
 
         # Handle literal types (choices) like baz: Literal["a", "b", "c"]
         if get_origin(field_type) is Literal:
-            # TODO: this needs serious testing
             try:
                 choices = [(choice, choice) for choice in get_args(field_type)]
                 return forms.ChoiceField(
@@ -143,9 +142,7 @@ class PydanticModelForm(forms.Form):
             logger.warning("Unsupported type: %s. Creating CharField", field_type)
             return self._create_string_field(field_info, is_required, default)
 
-    def union_to_field_type(
-        self, field_type: type[Any] | None
-    ) -> type[float] | type[int] | type[str] | None:
+    def union_to_field_type(self, field_type: type[Any] | None) -> type[Any] | None:
         union_args = get_args(field_type)
         # Filter out None types
         type_classes = [arg for arg in union_args if arg is not type(None)]
@@ -153,12 +150,8 @@ class PydanticModelForm(forms.Form):
         # Priority list of how to handle these types
         # If a type can accept string we should use it. Types like aeonlib.Angle support various
         # string representations, the type of input field doesn't really matter.
-        if str in type_classes:
-            return str
-        elif float in type_classes:
-            return float
-        elif int in type_classes:
-            return int
+        prio = [str, float, int, date, datetime]
+        return next((t for t in prio if t in type_classes), None)
 
     def _create_string_field(
         self, field_info: FieldInfo, is_required: bool, default: Any
