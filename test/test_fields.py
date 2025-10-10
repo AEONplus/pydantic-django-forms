@@ -87,8 +87,7 @@ def test_field_descriptions():
 
 
 class StringModel(BaseModel):
-    field: str
-    """A concise descrption"""
+    field: str = Field(min_length=1, max_length=200)
 
 
 class StringForm(PydanticModelForm):
@@ -99,6 +98,16 @@ class StringForm(PydanticModelForm):
 def test_string_field_is_char():
     form = StringForm()
     assert form.fields["field"].__class__ == forms.CharField
+
+
+def test_string_field_max_length():
+    form = StringForm({"field": "a" * 500})
+    assert getattr(form.fields["field"], "max_length") == 200
+    assert not form.is_valid()
+    assert (
+        "Ensure this value has at most 200 characters (it has 500)."
+        in form.errors["field"]
+    )
 
 
 class IntegerModel(BaseModel):
@@ -129,7 +138,7 @@ def test_valid_integer_model_form():
 def test_invalid_integer_model_form():
     form = IntegerForm({"field": -1})
     assert not form.is_valid()
-    assert "Input should be greater than or equal to 0" in form.errors["field"]
+    assert "Ensure this value is greater than or equal to 0." in form.errors["field"]
 
     form = IntegerForm({"field": "foo"})
     assert not form.is_valid()
@@ -163,7 +172,7 @@ def test_valid_float_model_form():
 def test_invalid_float_model_form():
     form = FloatForm({"field": 9000.0})
     assert not form.is_valid()
-    assert "Input should be less than 1000" in form.errors["field"]
+    assert "Ensure this value is less than or equal to 999." in form.errors["field"]
 
 
 class BooleanModel(BaseModel):

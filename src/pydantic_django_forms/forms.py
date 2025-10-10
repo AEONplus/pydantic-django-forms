@@ -1,11 +1,13 @@
 # pyright: reportAny=false, reportExplicitAny=false
 from types import UnionType
 from typing import Annotated, get_origin, get_args, Literal, Any, override
+from annotated_types import Ge, Gt, Le, Lt, MaxLen, MinLen
 from django import forms
 from pydantic import BaseModel, ValidationError
 from pydantic.fields import FieldInfo
 from logging import getLogger
 from datetime import date, datetime
+
 
 logger = getLogger(__name__)
 
@@ -157,10 +159,20 @@ class PydanticModelForm(forms.Form):
         self, field_info: FieldInfo, is_required: bool, default: Any
     ) -> forms.CharField:
         """Create a string form field with constraints"""
+        max_length = 2000
+        min_length = 0
+
+        for constraint in field_info.metadata:
+            if isinstance(constraint, MaxLen):
+                max_length = constraint.max_length
+            if isinstance(constraint, MinLen):
+                min_length = constraint.min_length
+
         return forms.CharField(
             required=is_required,
             initial=default,
-            max_length=2000,
+            min_length=min_length,
+            max_length=max_length,
             help_text=field_info.description or "",
         )
 
@@ -168,18 +180,17 @@ class PydanticModelForm(forms.Form):
         self, field_info: FieldInfo, is_required: bool, default: Any
     ) -> forms.IntegerField:
         """Create an integer form field with constraints"""
-        min_value = None
-        max_value = None
+        min_value: int | None = None
+        max_value: int | None = None
 
-        constraints = getattr(field_info, "constraints", [])
-        for constraint in constraints:
-            if hasattr(constraint, "ge"):
+        for constraint in field_info.metadata:
+            if isinstance(constraint, Ge):
                 min_value = constraint.ge
-            elif hasattr(constraint, "gt"):
+            if isinstance(constraint, Gt):
                 min_value = constraint.gt + 1
-            if hasattr(constraint, "le"):
+            if isinstance(constraint, Le):
                 max_value = constraint.le
-            elif hasattr(constraint, "lt"):
+            if isinstance(constraint, Lt):
                 max_value = constraint.lt - 1
 
         return forms.IntegerField(
@@ -197,15 +208,14 @@ class PydanticModelForm(forms.Form):
         min_value = None
         max_value = None
 
-        constraints = getattr(field_info, "constraints", [])
-        for constraint in constraints:
-            if hasattr(constraint, "ge"):
+        for constraint in field_info.metadata:
+            if isinstance(constraint, Ge):
                 min_value = constraint.ge
-            elif hasattr(constraint, "gt"):
+            if isinstance(constraint, Gt):
                 min_value = constraint.gt + 1
-            if hasattr(constraint, "le"):
+            if isinstance(constraint, Le):
                 max_value = constraint.le
-            elif hasattr(constraint, "lt"):
+            if isinstance(constraint, Lt):
                 max_value = constraint.lt - 1
 
         field = forms.FloatField(
