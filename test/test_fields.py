@@ -3,6 +3,7 @@ from annotated_types import Le, Ge, Lt, Gt
 from django import forms
 from pydantic_django_forms.forms import PydanticModelForm
 from pydantic import BaseModel, ConfigDict, Field
+from datetime import date, datetime, UTC
 
 
 class OptionalModel(BaseModel):
@@ -166,7 +167,8 @@ def test_invalid_float_model_form():
 
 
 class BooleanModel(BaseModel):
-    field: bool
+    # A required boolean field just means that it has to be checked
+    field: bool | None
 
 
 class BooleanForm(PydanticModelForm):
@@ -177,3 +179,45 @@ class BooleanForm(PydanticModelForm):
 def test_boolean_field_is_boolean():
     form = BooleanForm()
     assert form.fields["field"].__class__ == forms.BooleanField
+
+
+def test_boolean_field_valid():
+    # Boolean feilds are a little werid, I believe a value is only present
+    # when a checkbox is checked, thus it is true if any value is present and false
+    # if not. Will need to test this with actual forms later.
+    form = BooleanForm({"field": True})
+    assert form.is_valid()
+    assert form.cleaned_data["field"] is True
+
+    form = BooleanForm({"field": "anything"})
+    assert form.is_valid()
+    assert form.cleaned_data["field"] is True
+
+    form = BooleanForm({})
+    assert form.is_valid()
+    assert form.cleaned_data["field"] is False
+
+
+class DateAndDateTimeModel(BaseModel):
+    date: date
+    datetime: datetime
+
+
+class DateAndDateTimeForm(PydanticModelForm):
+    class Meta:
+        model = DateAndDateTimeModel
+
+
+def test_date_and_datetime_field_is_date_and_datetime():
+    form = DateAndDateTimeForm()
+    assert form.fields["date"].__class__ == forms.DateField
+    assert form.fields["datetime"].__class__ == forms.DateTimeField
+
+
+def test_date_and_datetime_field_valid():
+    form = DateAndDateTimeForm(
+        {"date": "2025-01-01", "datetime": "2025-01-01T12:00:00"}
+    )
+    assert form.is_valid()
+    assert form.cleaned_data["date"] == date(2025, 1, 1)
+    assert form.cleaned_data["datetime"] == datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)

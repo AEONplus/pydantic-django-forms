@@ -125,8 +125,14 @@ class PydanticModelForm(forms.Form):
             )
 
         # Date/datetime types
-        elif field_type is date or field_type is datetime:
+        elif field_type is date:
             return forms.DateField(
+                required=is_required,
+                initial=default,
+                help_text=field_info.description or "",
+            )
+        elif field_type is datetime:
+            return forms.DateTimeField(
                 required=is_required,
                 initial=default,
                 help_text=field_info.description or "",
