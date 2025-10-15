@@ -44,9 +44,10 @@ class PydanticModelForm(forms.Form):
     def _add_pydantic_fields(self):
         """Iterate over every pydantic model field and get a django form field out"""
         for field_name, field_info in self.pydantic_model.model_fields.items():
-            django_field = self._convert_pydantic_field(field_name, field_info)
-            if django_field is not None:
-                self.fields[field_name] = django_field
+            if not self.fields.get(field_name):  # Do not overwrite existing fields
+                django_field = self._convert_pydantic_field(field_name, field_info)
+                if django_field is not None:
+                    self.fields[field_name] = django_field
 
     def _convert_pydantic_field(
         self, field_name: str, field_info: FieldInfo
