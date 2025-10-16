@@ -1,12 +1,21 @@
-from django import forms
 from django.views.generic import FormView
+from pydantic.main import BaseModel
+from pydantic_django_forms.forms import PydanticModelForm
 
 
-class SimpleForm(forms.Form):
-    name = forms.CharField(max_length=100)
+class IntegrationModel(BaseModel):
+    integer: int
+    string: str
+    boolean: bool = False
+    floater: float
 
 
-class SimpleFormView(FormView):
-    template_name = "simple_form.html"
-    form_class = SimpleForm
-    success_url = "/simple"
+class IntegrationModelForm(PydanticModelForm):
+    class Meta:
+        model = IntegrationModel
+
+
+class IntegrationTestView(FormView):
+    template_name = "integration_test.html"
+    form_class = IntegrationModelForm
+    success_url = "/integration"

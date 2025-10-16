@@ -1,7 +1,7 @@
 from django.urls import path
 
-from .views import SimpleFormView
+from .views import IntegrationTestView
 
 urlpatterns = [
-    path("simple/", SimpleFormView.as_view(), name="simple_form"),
+    path("integration/", IntegrationTestView.as_view(), name="integration"),
 ]
