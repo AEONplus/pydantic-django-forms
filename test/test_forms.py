@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 class PersonModel(BaseModel):
     id: int = Field(gt=0)
     name: str = Field(min_length=1, max_length=200)
+    nothere: str
 
 
 class PersonModelForm(PydanticModelForm):
@@ -17,6 +18,7 @@ class PersonModelForm(PydanticModelForm):
 
     class Meta:
         model = PersonModel
+        fields = ["id", "name"]
 
 
 def test_form_override():
@@ -30,3 +32,9 @@ def test_form_validate_methods():
     form = PersonModelForm({"name": "lindy"})
     assert not form.is_valid()
     assert "This is not mark!" in form.errors["name"]
+
+
+def test_form_fields():
+    """Test that fields not included in Meta.fields are not included in the form"""
+    form = PersonModelForm()
+    assert "nothere" not in form.fields

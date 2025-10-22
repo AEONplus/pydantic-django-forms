@@ -21,13 +21,16 @@ class PydanticModelForm(forms.Form):
         super().__init__(*args, **kwargs)
         self._add_pydantic_fields()
 
-    def _get_pydantic_model(self) -> type[BaseModel]:
-        meta: Any = getattr(self.__class__, "Meta", None)
+    def _get_meta_class(self) -> object:
+        meta: object = getattr(self.__class__, "Meta", None)
         if meta is None:
             raise ValueError(
                 f"From class {self.__class__.__name__} is missing Meta class"
             )
+        return meta
 
+    def _get_pydantic_model(self) -> type[BaseModel]:
+        meta = self._get_meta_class()
         model: Any = getattr(meta, "model", None)
         if model is None:
             raise ValueError(
@@ -41,9 +44,29 @@ class PydanticModelForm(forms.Form):
 
         return model
 
+    def _get_include_fields(self) -> list[tuple[str, FieldInfo]]:
+        """Determines which fields to include in the form based on Meta.fields, same format
+        as django Model fields."""
+        meta = self._get_meta_class()
+        fields: Any = getattr(meta, "fields", None)
+        if fields is None:
+            fields = ["__all__"]
+
+        if not isinstance(fields, list):
+            raise ValueError(f"Meta.fields of {self.__class__.__name__} must be a list")
+
+        if fields == ["__all__"]:
+            return self.pydantic_model.model_fields.items()
+        else:
+            return [
+                field
+                for field in self.pydantic_model.model_fields.items()
+                if field[0] in fields
+            ]
+
     def _add_pydantic_fields(self):
         """Iterate over every pydantic model field and get a django form field out"""
-        for field_name, field_info in self.pydantic_model.model_fields.items():
+        for field_name, field_info in self._get_include_fields():
             if not self.fields.get(field_name):  # Do not overwrite existing fields
                 django_field = self._convert_pydantic_field(field_name, field_info)
                 if django_field is not None:
